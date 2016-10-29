@@ -4,21 +4,32 @@
 		<meta charset="utf-8" />
 		<title>iframe demo frame 2</title>
 		<script src="pubsub-bridge.js"></script>
+		<script src="../src/pubsub.js"></script>
 		<script>
-			function init( PubSub ){
-				var btn = document.getElementById('publish-thing');
+			// create a function to receive the topic
+		var myFunc1 = function( msg, data ){
+		    console.log( msg, data );
+		};
+       var myFunc2 = function( msg, data ){
+		    console.log( msg, data );
+		};
+		var myFunc3 = function( msg, data ){
+		    console.log( msg, data );
+		};
+		// unsubscribe mySubscriber from ALL topics
+		//PubSub.unsubscribe( mySubscriber );
+		//unsubscribe方法如果没有token会取消所有的topic，这一点要弄清楚
+		//PubSub.subscribe('a', myFunc1);
+		//下面的内容a.b取消后，a.b／a.b.c都不会触发
+		PubSub.subscribe('a.b', myFunc2);
+		PubSub.subscribe('a.b.c', myFunc3);
 
-				setPubSub( PubSub );
-				console.log( 'frame 2 init - ', window.PubSub );
-				
-				PubSub.subscribe( 'hello-world', function( topic, data ){
-					console.log('hello-world received at frame 2 - ', data );
-				});
-
-				btn.onclick = function(){					
-					PubSub.publish( 'hello-world', 'from button in frame 2' );
-				};				
-			}
+		PubSub.unsubscribe('a');
+		// no further notications for 'a.b' and 'a.b.c' topics
+		// notifications for 'a' will still get published
+		//清除所有的注册的函数
+		//PubSub.clearAllSubscriptions();
+		// all subscriptions are removed
 		</script>		
 	</head>
 	<body>

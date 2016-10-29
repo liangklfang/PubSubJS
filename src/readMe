@@ -1,0 +1,55 @@
+问题1:设计取消函数调用方法
+ 解决：只是需要一个独一无二的id来存储回调函数，然后把这个id返回就可以取消回调了
+问题2:设置是否是立即调用的错误
+ 解决：PubSub.immediateExceptions，如果用户没有设置就是false
+问题3:topic表示什么意思？
+ 解决：其中topic表示每次触发的消息，如"a.b.c",那么依次调用的是"a.b.c","a.b","a"，但是pubsub没有
+      像jquery那样把空间进行sort，如"a.b.c"不会出发“b.a”
+问题4:originalMessage表示的是什么？
+  解答：其中subscribers[s]表示的是回调函数，但是originalMessage一直表示的就是调用
+	   publish时候传入的第一个参数
+问题5:清除某一个特定命名空间下所有的回调函数
+	PubSub.clearSubscriptions = function clearSubscriptions(topic){
+			var m;
+			for (m in messages){
+				if (messages.hasOwnProperty(m) && m.indexOf(topic) === 0){
+					delete messages[m];
+				}
+			}
+		};
+问题6:publish方法会把所有的方法都执行一遍
+function createDeliveryFunction( message, data, immediateExceptions ){
+		return function deliverNamespaced(){
+			var topic = String( message ),
+				position = topic.lastIndexOf( '.' );
+                //得到topic，也就是publish("a.b.c")中的最后一个.号
+			// deliver the message as it is now
+			deliverMessage(message, message, data, immediateExceptions);
+            //首先：直接触发一次
+			// trim the hierarchy and deliver message to each level
+			//然后：分级触发
+			while( position !== -1 ){
+				topic = topic.substr( 0, position );
+				position = topic.lastIndexOf('.');
+				deliverMessage( message, topic, data, immediateExceptions );
+			}
+		};
+	}
+所以，publish("a.b.c")的时候，我们会首先触发"a.b.c"，然后是"a.b"，最后是"a"
+问题7:messageHasSubscribers方法用于判断如"a.b.c"下是否有"a.b"和"a"
+function messageHasSubscribers( message ){
+		var topic = String( message ),
+			found = Boolean(messages.hasOwnProperty( topic ) && hasKeys(messages[topic])),
+			position = topic.lastIndexOf( '.' );
+            //也就是没有这个完整topic同时也是分级的，所以我们会不断判断是否有下面级别的topic
+		while ( !found && position !== -1 ){
+			topic = topic.substr( 0, position );
+			position = topic.lastIndexOf( '.' );
+			found = Boolean(messages.hasOwnProperty( topic ) && hasKeys(messages[topic]));
+		}
+
+		return found;
+	}
+
+
+
